@@ -15,12 +15,11 @@ fn main() {
             }
             "echo" => {
                 let content = buffer.strip_prefix("echo").unwrap();
-                let content = content.trim_start();
+                let content = content.trim();
                 println!("{}", content);
             }
             _ => {
-                buffer.pop();
-                println!("{}: command not found", buffer);
+                println!("{}: command not found", buffer.trim());
             }
         }
         buffer.clear();
