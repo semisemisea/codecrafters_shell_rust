@@ -9,5 +9,6 @@ fn main() {
         io::stdin().read_line(&mut buffer).unwrap();
         buffer.pop();
         println!("{}: command not found", buffer);
+        buffer.clear();
     }
 }
