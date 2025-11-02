@@ -7,8 +7,14 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut buffer).unwrap();
-        buffer.pop();
-        println!("{}: command not found", buffer);
+        let mut words = buffer.split_whitespace();
+        match words.next().unwrap() {
+            "exit" => {
+                let exit_code = words.next().unwrap().parse::<i32>().unwrap();
+                std::process::exit(exit_code);
+            }
+            _ => println!("{}: command not found", buffer),
+        }
         buffer.clear();
     }
 }
