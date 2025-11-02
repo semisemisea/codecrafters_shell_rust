@@ -13,7 +13,10 @@ fn main() {
                 let exit_code = words.next().unwrap().parse::<i32>().unwrap();
                 std::process::exit(exit_code);
             }
-            _ => println!("{}: command not found", buffer),
+            _ => {
+                buffer.pop();
+                println!("{}: command not found", buffer);
+            }
         }
         buffer.clear();
     }
