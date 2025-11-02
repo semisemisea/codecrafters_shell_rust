@@ -13,6 +13,11 @@ fn main() {
                 let exit_code = words.next().unwrap().parse::<i32>().unwrap();
                 std::process::exit(exit_code);
             }
+            "echo" => {
+                let content = buffer.strip_prefix("echo").unwrap();
+                let content = content.trim_start();
+                println!("{}", content);
+            }
             _ => {
                 buffer.pop();
                 println!("{}: command not found", buffer);
