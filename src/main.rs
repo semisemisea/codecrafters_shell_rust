@@ -43,7 +43,7 @@ fn path_executables() -> std::io::Result<HashMap<OsString, path::PathBuf>> {
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
     let path_env_exec = path_executables().unwrap();
-    let mut curr_path = path::absolute(path::Path::new(".")).unwrap();
+    let mut curr_dir = path::absolute(path::Path::new(".")).unwrap();
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -74,18 +74,23 @@ fn main() -> io::Result<()> {
                 }
             },
             "pwd" => {
-                println!("{}", curr_path.display());
+                println!("{}", curr_dir.display());
             }
             "cd" => {
                 let change_to = words.next().unwrap();
                 let dir = path::Path::new(change_to);
-                if !dir.exists() {
-                    println!("cd: {}: No such file or directory", dir.display());
-                }
                 if dir.is_absolute() {
-                    curr_path = dir.to_path_buf();
+                    if !dir.exists() {
+                        println!("cd: {}: No such file or directory", dir.display());
+                    }
+                    curr_dir = dir.to_path_buf();
                 } else {
-                    curr_path = fs::canonicalize(curr_path.join(dir))?;
+                    let target = path_clean::clean(curr_dir.join(dir));
+                    if target.exists() {
+                        curr_dir = target;
+                    } else {
+                        println!("cd: {}: No such file or directory", target.display())
+                    };
                 }
             }
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {

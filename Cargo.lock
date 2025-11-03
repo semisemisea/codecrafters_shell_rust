@@ -21,6 +21,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "is_executable",
+ "path-clean",
  "thiserror",
 ]
 
@@ -32,6 +33,12 @@ checksum = "baabb8b4867b26294d818bf3f651a454b6901431711abb96e296245888d6e8c4"
 dependencies = [
  "windows-sys",
 ]
+
+[[package]]
+name = "path-clean"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17359afc20d7ab31fdb42bb844c8b3bb1dabd7dcf7e68428492da7f16966fcef"
 
 [[package]]
 name = "proc-macro2"
