@@ -15,6 +15,7 @@ fn built_ins() -> &'static HashSet<&'static str> {
         s.insert("exit");
         s.insert("echo");
         s.insert("type");
+        s.insert("pwd");
         s
     })
 }
@@ -70,6 +71,10 @@ fn main() {
                     println!("{other}: not found");
                 }
             },
+            "pwd" => {
+                let path = std::path::absolute(std::path::Path::new(".")).unwrap();
+                println!("{}", path.display());
+            }
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {
                 let args = words.collect::<Vec<_>>();
                 let mut command = Command::new(executable);
