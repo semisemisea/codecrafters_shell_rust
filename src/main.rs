@@ -1,7 +1,7 @@
 use is_executable::{self, IsExecutable};
 use std::ffi::{OsStr, OsString};
 use std::io::{self, BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::path;
 use std::process::{Command, Stdio};
 use std::{
     collections::{HashMap, HashSet},
@@ -16,11 +16,12 @@ fn built_ins() -> &'static HashSet<&'static str> {
         s.insert("echo");
         s.insert("type");
         s.insert("pwd");
+        s.insert("cd");
         s
     })
 }
 
-fn path_executables() -> std::io::Result<HashMap<OsString, PathBuf>> {
+fn path_executables() -> std::io::Result<HashMap<OsString, path::PathBuf>> {
     let mut map = HashMap::new();
     if let Some(ref path) = std::env::var_os("PATH") {
         for path in std::env::split_paths(path) {
@@ -42,6 +43,7 @@ fn path_executables() -> std::io::Result<HashMap<OsString, PathBuf>> {
 fn main() {
     let mut buffer = String::new();
     let path_env_exec = path_executables().unwrap();
+    let mut curr_path = path::absolute(path::Path::new(".")).unwrap();
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -72,8 +74,17 @@ fn main() {
                 }
             },
             "pwd" => {
-                let path = std::path::absolute(std::path::Path::new(".")).unwrap();
-                println!("{}", path.display());
+                println!("{}", curr_path.display());
+            }
+            "cd" => {
+                let change_to = words.next().unwrap();
+                let dir = path::Path::new(change_to);
+                if !dir.exists() {
+                    println!("cd: {}: No such file or directory", dir.display());
+                }
+                if dir.is_absolute() {
+                    curr_path = dir.to_path_buf();
+                }
             }
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {
                 let args = words.collect::<Vec<_>>();
