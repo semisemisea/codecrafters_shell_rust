@@ -2,6 +2,7 @@ use is_executable::{self, IsExecutable};
 use std::ffi::{OsStr, OsString};
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::{
     collections::{HashMap, HashSet},
     sync::OnceLock,
@@ -69,6 +70,18 @@ fn main() {
                     println!("{other}: not found");
                 }
             },
+            executable if path_env_exec.contains_key(OsStr::new(executable)) => {
+                println!("{}", buffer);
+                std::io::stdout().flush().unwrap();
+                let args = words.collect::<Vec<_>>();
+                let mut command = Command::new(executable);
+                command.args(args);
+                command.stdout(Stdio::piped());
+                command.stdout(Stdio::piped());
+                if let Ok(mut child) = command.spawn() {
+                    let _status = child.wait().unwrap();
+                }
+            }
             _ => {
                 println!("{}: command not found", buffer.trim());
             }
