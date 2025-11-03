@@ -22,12 +22,14 @@ fn path_executables() -> std::io::Result<HashMap<OsString, PathBuf>> {
     let mut map = HashMap::new();
     if let Some(ref path) = std::env::var_os("PATH") {
         for path in std::env::split_paths(path) {
-            for entry in std::fs::read_dir(path)? {
-                let dir = entry?;
-                if dir.path().is_executable() {
-                    let name = dir.file_name();
-                    let path = dir.path();
-                    map.insert(name, path);
+            if let Ok(path) = std::fs::read_dir(path) {
+                for entry in path {
+                    let dir = entry?;
+                    if dir.path().is_executable() {
+                        let name = dir.file_name();
+                        let path = dir.path();
+                        map.entry(name).or_insert(path);
+                    }
                 }
             }
         }
@@ -59,8 +61,8 @@ fn main() {
                 }
                 exec if path_env_exec.contains_key(OsStr::new(exec)) => {
                     println!(
-                        "{exec} is {}",
-                        path_env_exec.get(OsStr::new(exec)).unwrap().display()
+                        "{exec} is {:?}",
+                        path_env_exec.get(OsStr::new(exec)).unwrap()
                     )
                 }
                 other => {
