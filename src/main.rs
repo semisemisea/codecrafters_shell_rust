@@ -78,6 +78,9 @@ fn main() -> io::Result<()> {
             }
             "cd" => {
                 let change_to = words.next().unwrap();
+                if change_to == "~" {
+                    curr_dir = std::env::home_dir().unwrap();
+                }
                 let dir = path::Path::new(change_to);
                 if dir.is_absolute() {
                     if !dir.exists() {
