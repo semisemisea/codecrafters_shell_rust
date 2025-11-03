@@ -61,8 +61,8 @@ fn main() {
                 }
                 exec if path_env_exec.contains_key(OsStr::new(exec)) => {
                     println!(
-                        "{exec} is {:?}",
-                        path_env_exec.get(OsStr::new(exec)).unwrap()
+                        "{exec} is {}",
+                        path_env_exec.get(OsStr::new(exec)).unwrap().display()
                     )
                 }
                 other => {
