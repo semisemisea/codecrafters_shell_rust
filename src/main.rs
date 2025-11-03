@@ -1,12 +1,12 @@
 use is_executable::{self, IsExecutable};
 use std::ffi::{OsStr, OsString};
 use std::io::{self, BufRead, BufReader, Write};
-use std::path;
 use std::process::{Command, Stdio};
 use std::{
     collections::{HashMap, HashSet},
     sync::OnceLock,
 };
+use std::{fs, path};
 
 fn built_ins() -> &'static HashSet<&'static str> {
     static SET: OnceLock<HashSet<&'static str>> = OnceLock::new();
@@ -40,7 +40,7 @@ fn path_executables() -> std::io::Result<HashMap<OsString, path::PathBuf>> {
     Ok(map)
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let mut buffer = String::new();
     let path_env_exec = path_executables().unwrap();
     let mut curr_path = path::absolute(path::Path::new(".")).unwrap();
@@ -84,6 +84,8 @@ fn main() {
                 }
                 if dir.is_absolute() {
                     curr_path = dir.to_path_buf();
+                } else {
+                    curr_path = fs::canonicalize(curr_path.join(dir))?;
                 }
             }
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {
