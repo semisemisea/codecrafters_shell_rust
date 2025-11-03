@@ -80,20 +80,21 @@ fn main() -> io::Result<()> {
                 let change_to = words.next().unwrap();
                 if change_to == "~" {
                     curr_dir = std::env::home_dir().unwrap();
-                }
-                let dir = path::Path::new(change_to);
-                if dir.is_absolute() {
-                    if !dir.exists() {
-                        println!("cd: {}: No such file or directory", dir.display());
-                    }
-                    curr_dir = dir.to_path_buf();
                 } else {
-                    let target = path_clean::clean(curr_dir.join(dir));
-                    if target.exists() {
-                        curr_dir = target;
+                    let dir = path::Path::new(change_to);
+                    if dir.is_absolute() {
+                        if !dir.exists() {
+                            println!("cd: {}: No such file or directory", dir.display());
+                        }
+                        curr_dir = dir.to_path_buf();
                     } else {
-                        println!("cd: {}: No such file or directory", target.display())
-                    };
+                        let target = path_clean::clean(curr_dir.join(dir));
+                        if target.exists() {
+                            curr_dir = target;
+                        } else {
+                            println!("cd: {}: No such file or directory", target.display())
+                        };
+                    }
                 }
             }
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {
