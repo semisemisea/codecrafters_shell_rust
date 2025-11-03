@@ -1,8 +1,13 @@
-#[allow(unused_imports)]
+use is_executable::{self, IsExecutable};
+use std::ffi::{OsStr, OsString};
 use std::io::{self, Write};
-use std::{collections::HashSet, sync::OnceLock};
+use std::path::PathBuf;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::OnceLock,
+};
 
-fn built_in() -> &'static HashSet<&'static str> {
+fn built_ins() -> &'static HashSet<&'static str> {
     static SET: OnceLock<HashSet<&'static str>> = OnceLock::new();
     SET.get_or_init(|| {
         let mut s = HashSet::new();
@@ -13,8 +18,26 @@ fn built_in() -> &'static HashSet<&'static str> {
     })
 }
 
+fn path_executables() -> std::io::Result<HashMap<OsString, PathBuf>> {
+    let mut map = HashMap::new();
+    if let Some(ref path) = std::env::var_os("PATH") {
+        for path in std::env::split_paths(path) {
+            for entry in std::fs::read_dir(path)? {
+                let dir = entry?;
+                if dir.path().is_executable() {
+                    let name = dir.file_name();
+                    let path = dir.path();
+                    map.insert(name, path);
+                }
+            }
+        }
+    }
+    Ok(map)
+}
+
 fn main() {
     let mut buffer = String::new();
+    let path_env_exec = path_executables().unwrap();
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -31,8 +54,14 @@ fn main() {
                 println!("{}", content);
             }
             "type" => match words.next().unwrap() {
-                obj if built_in().contains(obj) => {
+                obj if built_ins().contains(obj) => {
                     println!("{obj} is a shell builtin");
+                }
+                exec if path_env_exec.contains_key(OsStr::new(exec)) => {
+                    println!(
+                        "{exec} is {}",
+                        path_env_exec.get(OsStr::new(exec)).unwrap().display()
+                    )
                 }
                 other => {
                     println!("{other}: not found");
