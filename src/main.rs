@@ -1,6 +1,6 @@
 use is_executable::{self, IsExecutable};
 use std::ffi::{OsStr, OsString};
-use std::io::{self, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{
@@ -48,7 +48,7 @@ fn main() {
         let mut words = buffer.split_whitespace();
         match words.next().unwrap() {
             "exit" => {
-                let exit_code = words.next().unwrap().parse::<i32>().unwrap();
+                let exit_code = words.next().unwrap_or("0").parse::<i32>().unwrap();
                 std::process::exit(exit_code);
             }
             "echo" => {
@@ -71,14 +71,38 @@ fn main() {
                 }
             },
             executable if path_env_exec.contains_key(OsStr::new(executable)) => {
-                println!("{}", buffer);
-                std::io::stdout().flush().unwrap();
                 let args = words.collect::<Vec<_>>();
                 let mut command = Command::new(executable);
                 command.args(args);
                 command.stdout(Stdio::piped());
-                command.stdout(Stdio::piped());
+                command.stderr(Stdio::piped());
                 if let Ok(mut child) = command.spawn() {
+                    let stdout = child.stdout.take().expect("Failed to open stdout");
+                    let stderr = child.stderr.take().expect("Failed to open stderr");
+                    let mut stdout_reader = BufReader::new(stdout);
+                    let mut stderr_reader = BufReader::new(stderr);
+                    let stdout_handle = std::thread::spawn(move || {
+                        let mut line = String::new();
+                        while let Ok(bytes) = stdout_reader.read_line(&mut line) {
+                            if bytes == 0 {
+                                break;
+                            }
+                            print!("{line}");
+                            line.clear();
+                        }
+                    });
+                    let stderr_handle = std::thread::spawn(move || {
+                        let mut line = String::new();
+                        while let Ok(bytes) = stderr_reader.read_line(&mut line) {
+                            if bytes == 0 {
+                                break;
+                            }
+                            print!("{line}");
+                            line.clear();
+                        }
+                    });
+                    stdout_handle.join().unwrap();
+                    stderr_handle.join().unwrap();
                     let _status = child.wait().unwrap();
                 }
             }
