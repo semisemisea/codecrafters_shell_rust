@@ -8,8 +8,6 @@ use std::{
     sync::OnceLock,
 };
 
-mod simp_lexer;
-
 fn built_ins() -> &'static HashSet<&'static str> {
     static SET: OnceLock<HashSet<&'static str>> = OnceLock::new();
     SET.get_or_init(|| {
