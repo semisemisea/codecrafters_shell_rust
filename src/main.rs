@@ -1,12 +1,14 @@
 use is_executable::{self, IsExecutable};
 use std::ffi::{OsStr, OsString};
 use std::io::{self, BufRead, BufReader, Write};
+use std::path;
 use std::process::{Command, Stdio};
 use std::{
     collections::{HashMap, HashSet},
     sync::OnceLock,
 };
-use std::{fs, path};
+
+mod simp_lexer;
 
 fn built_ins() -> &'static HashSet<&'static str> {
     static SET: OnceLock<HashSet<&'static str>> = OnceLock::new();
@@ -48,29 +50,37 @@ fn main() -> io::Result<()> {
         print!("$ ");
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut buffer).unwrap();
-        let mut words = buffer.split_whitespace();
-        match words.next().unwrap() {
+        let mut words = shlex::split(&buffer).unwrap().into_iter();
+        match words.next().unwrap().as_str() {
             "exit" => {
-                let exit_code = words.next().unwrap_or("0").parse::<i32>().unwrap();
+                let exit_code = words
+                    .next()
+                    .unwrap_or("0".to_string())
+                    .parse::<i32>()
+                    .unwrap();
                 std::process::exit(exit_code);
             }
             "echo" => {
-                let content = buffer.strip_prefix("echo").unwrap();
-                let content = content.trim();
-                println!("{}", content);
+                for word in words {
+                    print!("{word} ");
+                }
+                println!()
             }
-            "type" => match words.next().unwrap() {
-                obj if built_ins().contains(obj) => {
+            "type" => match words.next() {
+                Some(obj) if built_ins().contains(obj.as_str()) => {
                     println!("{obj} is a shell builtin");
                 }
-                exec if path_env_exec.contains_key(OsStr::new(exec)) => {
+                Some(exec) if path_env_exec.contains_key(OsStr::new(&exec)) => {
                     println!(
                         "{exec} is {}",
-                        path_env_exec.get(OsStr::new(exec)).unwrap().display()
+                        path_env_exec.get(OsStr::new(&exec)).unwrap().display()
                     )
                 }
-                other => {
+                Some(other) => {
                     println!("{other}: not found");
+                }
+                None => {
+                    println!("Usage: type <command>");
                 }
             },
             "pwd" => {
@@ -78,10 +88,14 @@ fn main() -> io::Result<()> {
             }
             "cd" => {
                 let change_to = words.next().unwrap();
-                if change_to == "~" {
-                    curr_dir = std::env::home_dir().unwrap();
+                if let Some(rest) = change_to.strip_prefix("~") {
+                    let mut target = std::env::home_dir().clone().unwrap();
+                    let target = target.as_mut_os_string();
+                    target.push(rest);
+                    println!("{}", target.display());
+                    curr_dir = path::PathBuf::from(&target);
                 } else {
-                    let dir = path::Path::new(change_to);
+                    let dir = path::Path::new(&change_to);
                     if dir.is_absolute() {
                         if !dir.exists() {
                             println!("cd: {}: No such file or directory", dir.display());
