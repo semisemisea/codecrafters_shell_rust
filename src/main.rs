@@ -92,7 +92,7 @@ fn main() -> io::Result<()> {
                     let mut target = std::env::home_dir().clone().unwrap();
                     let target = target.as_mut_os_string();
                     target.push(rest);
-                    println!("{}", target.display());
+                    // println!("{}", target.display());
                     curr_dir = path::PathBuf::from(&target);
                 } else {
                     let dir = path::Path::new(&change_to);
